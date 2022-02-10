@@ -38,9 +38,6 @@ for i,line in baseDF.iterrows():
 
   ann[int(line[33]):int(line[34])+1,1]= cls[12]
 
-  # ann(acSeg{idxV,35}:acSeg{idxV,36},2) = classes(12);
-
-  # print(line[0])
   if not os.path.exists('annot'):
     os.mkdir('annot')
 

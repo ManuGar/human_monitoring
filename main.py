@@ -3,6 +3,8 @@ import os
 import numpy as np
 import cv2
 
+# Función para normalizar los valores de las posiciones de los joint. Tienen que estar entre 0 y 255
+# para poder guardarlos en los píxeles de la imagen
 def normalize(value: float, lower_bound: float, higher_bound: float, max_value: int, min_value: int) -> float:
     if value > higher_bound:
         ret_value = max_value
@@ -12,36 +14,45 @@ def normalize(value: float, lower_bound: float, higher_bound: float, max_value: 
         ret_value = (max_value * ((value - lower_bound) / (higher_bound - lower_bound)))  # estava com cast de int()
     return ret_value
 
-
-
 # skeleton_path = 'IDU001V001_20220119_155742'
 skeleton_path = 'ske'
 
 i = 1
+# Límite de frames que se van a incluir en cada imagen
 max_frames = 120
 count_generated_imgs=0
+
+# En este vector guardamos el orden de los joint para luego poder recorrerlo en el orden que queremos
 joints_order = [1,2,3,26,27,28,29,28,27,30,31,30,27,26,3,2,4,5,6,7,8,9,8,7,10,7,6,5,4,2,11,12,13,14,
                 15,16,15,14,17,14,13,12,11,2,1]
 img = np.zeros((max_frames, len(joints_order),3), dtype=np.uint8)
+
+# Vamos recorriendo las carpetas y si se cambia de carpeta, dejaremos el resto de la imagen en negro y se empezará
+# la siguiente
 for nombre_directorio, dirs, ficheros in os.walk(skeleton_path, topdown=False):
+    print(nombre_directorio)
     for nombre_fichero in ficheros:
         ske=os.path.join(nombre_directorio,nombre_fichero)
         # print(os.path.join(nombre_directorio,nombre_fichero))
         frame = pd.read_csv(ske, sep="\t", header=0)
         frame = pd.DataFrame(frame)
         joints={}
-        #     con esto tenemos que ir leyendo los esqueletos y crear la imagen con todos.
-        #     Tendríamos que poner el límite de cuantos frames vamos a tener para generar cada imagen
+        # Con esto tenemos que ir leyendo los frames para obtener de cada uno la información de los esqueletos y
+        # generar una fila de la imagen para cada frame que leamos.
+
+
+        # Aquí guardamos los joints y los datos que queremos en un diccionario para luego generar la imagen
         for j, line in frame.iterrows():
             # print(line)
             # print(normalize(line[3],-200, 1000, 255, 0))
             # print(normalize(line[4],-1000, 1000, 255, 0))
             # print(normalize(line[5],1200, 2200, 255, 0))
-
             joints[int(line[1])]=[normalize(line[3],-200, 1000, 255, 0),normalize(line[4],-1000, 1000, 255, 0),
                                   normalize(line[5],1200, 2200, 255, 0)]
 
         # print(joints)
+        # Guardamos el contenido de las componentes de los diferentes joints en las coordenadas de la imagen
+        # para cada frame generamos una fila en la imagen
         for idx in range(len(joints_order)):
             # print(jo)
             # print(joints[joints_order[idx]][0])
@@ -49,17 +60,10 @@ for nombre_directorio, dirs, ficheros in os.walk(skeleton_path, topdown=False):
             img[i-1,idx,1]= joints[joints_order[idx]][1]
             img[i-1,idx,2]= joints[joints_order[idx]][2]
 
-
-        #     # aquí tenemos que saber el orden en el que usar el arbol del esqueleto. Pero creo que la mejor forma de trabajar
-        #     # es crear un diccionario que guarde como clave el id del joint y luego el resto de datos. Con esto es más facil
-        #     # recorrerlos y luego poder generar la imagen. Para la imagen tenemos que saber como normalizar las distancias.
-        #     # además de saber como crear la imagen, en el artículo lo ponen en escala de grises pero igual es mejor hacerlo
-        #     # en rgb para conservar la información de cada componente.
-        # # Aquí creamos el recorrido del esqueleto y luego generamos la imagen
-        #
+        # Aquí vamos a escribir la matriz con los datos a la imagen para guardarla. Primero comprobamos que podamos
+        # seguir guardando la matriz con los datos de la imagen que generamos. Si hemos llegado al límite de frames o
+        # al final del fichero, lo que haremos es escribirla en la imagen.
         if i< max_frames and (count_generated_imgs<len(ficheros) and i<len(ficheros)):
-            # Aqui deberiamos añadir tambien el caso en el que se acaben los esqueletos que leer. Esos tambien hay
-            # que añadirlos en la imagen
             i+=1
         else:
             generated_image="from_"+ str(count_generated_imgs)+"_to_"+ (str(count_generated_imgs+max_frames)+".jpg")
