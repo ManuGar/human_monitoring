@@ -47,6 +47,9 @@ for nombre_directorio, dirs, ficheros in os.walk(skeleton_path, topdown=False):
             # print(normalize(line[3],-200, 1000, 255, 0))
             # print(normalize(line[4],-1000, 1000, 255, 0))
             # print(normalize(line[5],1200, 2200, 255, 0))
+
+            # Los valores máximos y mínimos han sido seleccionados mirando los valores que obtienen los esqueletos
+            # que ibamos a estudiar (espero que esos valores se conserven también en los otros vídeos)
             joints[int(line[1])]=[normalize(line[3],-200, 1000, 255, 0),normalize(line[4],-1000, 1000, 255, 0),
                                   normalize(line[5],1200, 2200, 255, 0)]
 
