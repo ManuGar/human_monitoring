@@ -14,13 +14,14 @@ def normalize(value: float, lower_bound: float, higher_bound: float, max_value: 
         ret_value = (max_value * ((value - lower_bound) / (higher_bound - lower_bound)))  # estava com cast de int()
     return ret_value
 
-# skeleton_path = 'IDU001V001_20220119_155742'
-skeleton_path = 'ske'
+skeleton_path = 'IDU001V001_20220119_155742'
+# skeleton_path = 'ske'
 
 i = 1
 # Límite de frames que se van a incluir en cada imagen
-max_frames = 120
+max_frames = 70
 count_generated_frames=0
+# stride= 10
 
 # En este vector guardamos el orden de los joint para luego poder recorrerlo en el orden que queremos
 joints_order = [1,2,3,26,27,28,29,28,27,30,31,30,27,26,3,2,4,5,6,7,8,9,8,7,10,7,6,5,4,2,11,12,13,14,
@@ -31,7 +32,9 @@ img = np.zeros((max_frames, len(joints_order),3), dtype=np.uint8)
 # la siguiente
 for nombre_directorio, dirs, ficheros in os.walk(skeleton_path, topdown=False):
     # print(nombre_directorio)
+    # for nombre_fichero in ficheros:
     for nombre_fichero in ficheros:
+        # nombre_fichero = ficheros[l]
         ske=os.path.join(nombre_directorio,nombre_fichero)
         # print(os.path.join(nombre_directorio,nombre_fichero))
         frame = pd.read_csv(ske, sep="\t", header=0)
@@ -73,27 +76,11 @@ for nombre_directorio, dirs, ficheros in os.walk(skeleton_path, topdown=False):
             if not os.path.exists(os.path.join(nombre_directorio,"images")):
                 os.mkdir(os.path.join(nombre_directorio,"images"))
 
-            generated_image=os.path.join(nombre_directorio,"images","from_" + str(count_generated_frames) + "_to_" + (str(count_generated_frames + max_frames) + ".jpg"))
+            generated_image=os.path.join(nombre_directorio,"images","from_" + str(count_generated_frames) + "_to_" + (str(count_generated_frames + max_frames) ))
+            # count_generated_frames+=max_frames-stride
             count_generated_frames+=max_frames
             i=1
-            cv2.imwrite(generated_image, img)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            cv2.imwrite(generated_image+ ".jpg", img)
+            cv2.imwrite(generated_image+ "X.jpg", img[:,:,0])
+            cv2.imwrite(generated_image+ "Y.jpg", img[:,:,1])
+            cv2.imwrite(generated_image+ "Z.jpg", img[:,:,2])
