@@ -22,7 +22,7 @@ i = 1
 max_frames = 68
 # max_frames = 128 #Esto es por el resultado que nos ha dado la media y la mediana
 count_generated_frames=0
-stride= 15
+stride= 20
 
 # En este vector guardamos el orden de los joint para luego poder recorrerlo en el orden que queremos
 joints_order = [1,2,3,26,27,28,29,28,27,30,31,30,27,26,3,2,4,5,6,7,8,9,8,7,10,7,6,5,4,2,11,12,13,14,
@@ -47,11 +47,6 @@ for nombre_directorio, dirs, ficheros in os.walk(skeleton_path, topdown=False):
 
         # Aquí guardamos los joints y los datos que queremos en un diccionario para luego generar la imagen
         for j, line in frame.iterrows():
-            # print(line)
-            # print(normalize(line[3],-200, 1000, 255, 0))
-            # print(normalize(line[4],-1000, 1000, 255, 0))
-            # print(normalize(line[5],1200, 2200, 255, 0))
-
             # Los valores máximos y mínimos han sido seleccionados mirando los valores que obtienen los esqueletos
             # que ibamos a estudiar (espero que esos valores se conserven también en los otros vídeos)
             joints[int(line[1])]=[normalize(line[3],-200, 1000, 255, 0),normalize(line[4],-1000, 1000, 255, 0),
@@ -61,7 +56,6 @@ for nombre_directorio, dirs, ficheros in os.walk(skeleton_path, topdown=False):
         # Guardamos el contenido de las componentes de los diferentes joints en las coordenadas de la imagen
         # para cada frame generamos una fila en la imagen
         for idx in range(len(joints_order)):
-            # print(jo)
             # print(joints[joints_order[idx]][0])
             img[i-1,idx,0]= joints[joints_order[idx]][0]
             img[i-1,idx,1]= joints[joints_order[idx]][1]
