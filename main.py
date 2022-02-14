@@ -19,9 +19,10 @@ skeleton_path = 'IDU001V001_20220119_155742'
 
 i = 1
 # Límite de frames que se van a incluir en cada imagen
-max_frames = 70
+max_frames = 68
+# max_frames = 128 #Esto es por el resultado que nos ha dado la media y la mediana
 count_generated_frames=0
-# stride= 10
+stride= 15
 
 # En este vector guardamos el orden de los joint para luego poder recorrerlo en el orden que queremos
 joints_order = [1,2,3,26,27,28,29,28,27,30,31,30,27,26,3,2,4,5,6,7,8,9,8,7,10,7,6,5,4,2,11,12,13,14,
@@ -30,11 +31,12 @@ img = np.zeros((max_frames, len(joints_order),3), dtype=np.uint8)
 
 # Vamos recorriendo las carpetas y si se cambia de carpeta, dejaremos el resto de la imagen en negro y se empezará
 # la siguiente
+l=0 #contador para recorrer los ficheros con un while y poder hacer bien el stride
 for nombre_directorio, dirs, ficheros in os.walk(skeleton_path, topdown=False):
     # print(nombre_directorio)
     # for nombre_fichero in ficheros:
-    for nombre_fichero in ficheros:
-        # nombre_fichero = ficheros[l]
+    while l < len(ficheros) and count_generated_frames <= len(ficheros):
+        nombre_fichero = ficheros[l]
         ske=os.path.join(nombre_directorio,nombre_fichero)
         # print(os.path.join(nombre_directorio,nombre_fichero))
         frame = pd.read_csv(ske, sep="\t", header=0)
@@ -68,19 +70,22 @@ for nombre_directorio, dirs, ficheros in os.walk(skeleton_path, topdown=False):
         # Aquí vamos a escribir la matriz con los datos a la imagen para guardarla. Primero comprobamos que podamos
         # seguir guardando la matriz con los datos de la imagen que generamos. Si hemos llegado al límite de frames o
         # al final del fichero, lo que haremos es escribirla en la imagen.
-        if i< max_frames and (count_generated_frames < len(ficheros) and i < len(ficheros)):
-            i+=1
+        if i < max_frames and (l+1 < len(ficheros) and i < len(ficheros)):
+            i += 1
+            l += 1
         else:
             # Guardamos las imágenes generadas en una carpeta para que esté organizada junto al vídeo que hacen
             # referencia y poder saber fácilmente la clase de cada fila de las imágenes.
             if not os.path.exists(os.path.join(nombre_directorio,"images")):
                 os.mkdir(os.path.join(nombre_directorio,"images"))
-
             generated_image=os.path.join(nombre_directorio,"images","from_" + str(count_generated_frames) + "_to_" + (str(count_generated_frames + max_frames) ))
-            # count_generated_frames+=max_frames-stride
-            count_generated_frames+=max_frames
-            i=1
-            cv2.imwrite(generated_image+ ".jpg", img)
-            cv2.imwrite(generated_image+ "X.jpg", img[:,:,0])
-            cv2.imwrite(generated_image+ "Y.jpg", img[:,:,1])
-            cv2.imwrite(generated_image+ "Z.jpg", img[:,:,2])
+            # count_generated_frames+=max_frames
+            count_generated_frames += max_frames-stride
+            i = 1
+            cv2.imwrite(generated_image + ".jpg", img)
+            cv2.imwrite(generated_image + "X.jpg", img[:,:,0])
+            cv2.imwrite(generated_image + "Y.jpg", img[:,:,1])
+            cv2.imwrite(generated_image + "Z.jpg", img[:,:,2])
+            img = np.zeros((max_frames, len(joints_order), 3), dtype=np.uint8)
+            l -= stride
+            l += 1
