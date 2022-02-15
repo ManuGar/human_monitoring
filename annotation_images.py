@@ -1,5 +1,5 @@
 import argparse
-
+import os
 
 # Esta es la versión para label smoothing y así conservar la información sobre todas las clases. Guradamos en un CSV el
 # % de cuanto pertenece a cada clase. De esta forma no se pierde nada de información para hacer el entrenamiento.
@@ -8,8 +8,10 @@ def annotation_images_labelsmoothing(min_frame, max_frame, number_classes, annot
     actions_count = {}
     for i in range(number_classes):
         actions_count[i+1] = 0
+
     ann_file = open(annotation_path,"r")
-    output_path_csv = open(output_path, "a")
+
+
     for line in ann_file:
         line = line.split("\t")
         if(line[0]>=min_frame and line[0]<max_frame):
@@ -18,6 +20,14 @@ def annotation_images_labelsmoothing(min_frame, max_frame, number_classes, annot
             break
 
     number_frames = max_frame-min_frame
+    if (os.path.exists(output_path)):
+        output_path_csv = open(output_path, "a")
+    else:
+        output_path_csv = open(output_path, "w")
+        head = "images"
+        for i in range(number_classes):
+            head+= ", class " + i
+        output_path_csv.write(head)
 
     line_write = "from_"+min_frame+"_to_"+max_frame
     for cla in actions_count:
@@ -35,7 +45,7 @@ def annotation_images(min_frame, max_frame, number_classes, annotation_path, out
         actions_count[i + 1] = 0
 
     ann_file = open(annotation_path,"r")
-    output_path_csv = open(output_path, "a")
+
     for line in ann_file:
         line = line.split("\t")
         if(line[0]>=min_frame and line[0]<max_frame):
@@ -50,8 +60,16 @@ def annotation_images(min_frame, max_frame, number_classes, annotation_path, out
             max = actions_count[i]
             id = i
 
-    line_write = "from_"+min_frame+"_to_"+max_frame+ ", "+id
+    if (os.path.exists(output_path)):
+        output_path_csv = open(output_path, "a")
+    else:
+        output_path_csv = open(output_path, "w")
+        head = "images"
+        for i in range(number_classes):
+            head += ", class " + i
+        output_path_csv.write(head)
 
+    line_write = "from_"+min_frame+"_to_"+max_frame+ ", "+id
     output_path_csv.write(line_write)
     output_path_csv.close()
 
