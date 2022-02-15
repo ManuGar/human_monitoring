@@ -1,3 +1,4 @@
+import argparse
 import pandas as pd
 import os
 import numpy as np
@@ -14,72 +15,90 @@ def normalize(value: float, lower_bound: float, higher_bound: float, max_value: 
         ret_value = (max_value * ((value - lower_bound) / (higher_bound - lower_bound)))  # estava com cast de int()
     return ret_value
 
-skeleton_path = 'IDU001V001_20220119_155742'
-# skeleton_path = 'ske'
 
-i = 1
-# Límite de frames que se van a incluir en cada imagen
-max_frames = 68
-# max_frames = 128 #Esto es por el resultado que nos ha dado la media y la mediana
-count_generated_frames=0
-stride= 20
+def generate_images(skeleton_path, max_frames=68, stride=20):
 
-# En este vector guardamos el orden de los joint para luego poder recorrerlo en el orden que queremos
-joints_order = [1,2,3,26,27,28,29,28,27,30,31,30,27,26,3,2,4,5,6,7,8,9,8,7,10,7,6,5,4,2,11,12,13,14,
-                15,16,15,14,17,14,13,12,11,2,1]
-img = np.zeros((max_frames, len(joints_order),3), dtype=np.uint8)
+    i = 1
+    # Límite de frames que se van a incluir en cada imagen
+    # max_frames = 128 #Esto es por el resultado que nos ha dado la media y la mediana
+    count_generated_frames=0
 
-# Vamos recorriendo las carpetas y si se cambia de carpeta, dejaremos el resto de la imagen en negro y se empezará
-# la siguiente
-l=0 #contador para recorrer los ficheros con un while y poder hacer bien el stride
-for nombre_directorio, dirs, ficheros in os.walk(skeleton_path, topdown=False):
-    # print(nombre_directorio)
-    # for nombre_fichero in ficheros:
-    while l < len(ficheros) and count_generated_frames <= len(ficheros):
-        nombre_fichero = ficheros[l]
-        ske=os.path.join(nombre_directorio,nombre_fichero)
-        # print(os.path.join(nombre_directorio,nombre_fichero))
-        frame = pd.read_csv(ske, sep="\t", header=0)
-        frame = pd.DataFrame(frame)
-        joints={}
-        # Con esto tenemos que ir leyendo los frames para obtener de cada uno la información de los esqueletos y
-        # generar una fila de la imagen para cada frame que leamos.
+    # En este vector guardamos el orden de los joint para luego poder recorrerlo en el orden que queremos
+    joints_order = [1,2,3,26,27,28,29,28,27,30,31,30,27,26,3,2,4,5,6,7,8,9,8,7,10,7,6,5,4,2,11,12,13,14,
+                    15,16,15,14,17,14,13,12,11,2,1]
+    img = np.zeros((max_frames, len(joints_order),3), dtype=np.uint8)
 
-        # Aquí guardamos los joints y los datos que queremos en un diccionario para luego generar la imagen
-        for j, line in frame.iterrows():
-            # Los valores máximos y mínimos han sido seleccionados mirando los valores que obtienen los esqueletos
-            # que ibamos a estudiar (espero que esos valores se conserven también en los otros vídeos)
-            joints[int(line[1])]=[normalize(line[3],-200, 1000, 255, 0),normalize(line[4],-1000, 1000, 255, 0),
-                                  normalize(line[5],1200, 2200, 255, 0)]
+    # Vamos recorriendo las carpetas y si se cambia de carpeta, dejaremos el resto de la imagen en negro y se empezará
+    # la siguiente
+    l=0 #contador para recorrer los ficheros con un while y poder hacer bien el stride
+    for nombre_directorio, dirs, ficheros in os.walk(skeleton_path, topdown=False):
+        # print(nombre_directorio)
+        # for nombre_fichero in ficheros:
+        while l < len(ficheros) and count_generated_frames <= len(ficheros):
+            nombre_fichero = ficheros[l]
+            ske=os.path.join(nombre_directorio,nombre_fichero)
+            # print(os.path.join(nombre_directorio,nombre_fichero))
+            frame = pd.read_csv(ske, sep="\t", header=0)
+            frame = pd.DataFrame(frame)
+            joints={}
+            # Con esto tenemos que ir leyendo los frames para obtener de cada uno la información de los esqueletos y
+            # generar una fila de la imagen para cada frame que leamos.
 
-        # print(joints)
-        # Guardamos el contenido de las componentes de los diferentes joints en las coordenadas de la imagen
-        # para cada frame generamos una fila en la imagen
-        for idx in range(len(joints_order)):
-            # print(joints[joints_order[idx]][0])
-            img[i-1,idx,0]= joints[joints_order[idx]][0]
-            img[i-1,idx,1]= joints[joints_order[idx]][1]
-            img[i-1,idx,2]= joints[joints_order[idx]][2]
+            # Aquí guardamos los joints y los datos que queremos en un diccionario para luego generar la imagen
+            for j, line in frame.iterrows():
+                # Los valores máximos y mínimos han sido seleccionados mirando los valores que obtienen los esqueletos
+                # que ibamos a estudiar (espero que esos valores se conserven también en los otros vídeos)
+                joints[int(line[1])]=[normalize(line[3],-200, 1000, 255, 0),normalize(line[4],-1000, 1000, 255, 0),
+                                      normalize(line[5],1200, 2200, 255, 0)]
 
-        # Aquí vamos a escribir la matriz con los datos a la imagen para guardarla. Primero comprobamos que podamos
-        # seguir guardando la matriz con los datos de la imagen que generamos. Si hemos llegado al límite de frames o
-        # al final del fichero, lo que haremos es escribirla en la imagen.
-        if i < max_frames and (l+1 < len(ficheros) and i < len(ficheros)):
-            i += 1
-            l += 1
-        else:
-            # Guardamos las imágenes generadas en una carpeta para que esté organizada junto al vídeo que hacen
-            # referencia y poder saber fácilmente la clase de cada fila de las imágenes.
-            if not os.path.exists(os.path.join(nombre_directorio,"images")):
-                os.mkdir(os.path.join(nombre_directorio,"images"))
-            generated_image=os.path.join(nombre_directorio,"images","from_" + str(count_generated_frames) + "_to_" + (str(count_generated_frames + max_frames) ))
-            # count_generated_frames+=max_frames
-            count_generated_frames += max_frames-stride
-            i = 1
-            cv2.imwrite(generated_image + ".jpg", img)
-            cv2.imwrite(generated_image + "X.jpg", img[:,:,0])
-            cv2.imwrite(generated_image + "Y.jpg", img[:,:,1])
-            cv2.imwrite(generated_image + "Z.jpg", img[:,:,2])
-            img = np.zeros((max_frames, len(joints_order), 3), dtype=np.uint8)
-            l -= stride
-            l += 1
+            # print(joints)
+            # Guardamos el contenido de las componentes de los diferentes joints en las coordenadas de la imagen
+            # para cada frame generamos una fila en la imagen
+            for idx in range(len(joints_order)):
+                # print(joints[joints_order[idx]][0])
+                img[i-1,idx,0]= joints[joints_order[idx]][0]
+                img[i-1,idx,1]= joints[joints_order[idx]][1]
+                img[i-1,idx,2]= joints[joints_order[idx]][2]
+
+            # Aquí vamos a escribir la matriz con los datos a la imagen para guardarla. Primero comprobamos que podamos
+            # seguir guardando la matriz con los datos de la imagen que generamos. Si hemos llegado al límite de frames o
+            # al final del fichero, lo que haremos es escribirla en la imagen.
+            if i < max_frames and (l+1 < len(ficheros) and i < len(ficheros)):
+                i += 1
+                l += 1
+            else:
+                # Guardamos las imágenes generadas en una carpeta para que esté organizada junto al vídeo que hacen
+                # referencia y poder saber fácilmente la clase de cada fila de las imágenes.
+                if not os.path.exists(os.path.join(nombre_directorio,"images")):
+                    os.mkdir(os.path.join(nombre_directorio,"images"))
+                generated_image=os.path.join(nombre_directorio,"images","from_" + str(count_generated_frames) + "_to_" + (str(count_generated_frames + max_frames) ))
+                # count_generated_frames+=max_frames
+                count_generated_frames += max_frames-stride
+                i = 1
+                cv2.imwrite(generated_image + ".jpg", img)
+                cv2.imwrite(generated_image + "X.jpg", img[:,:,0])
+                cv2.imwrite(generated_image + "Y.jpg", img[:,:,1])
+                cv2.imwrite(generated_image + "Z.jpg", img[:,:,2])
+                img = np.zeros((max_frames, len(joints_order), 3), dtype=np.uint8)
+                l -= stride
+                l += 1
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--skeleton_path', type=str,
+                        help='path of the skeleton files')
+    parser.add_argument('--max_frames', type=int, default=68,
+                        help='number of frames to store in each image')
+    parser.add_argument('--stride', type=int, default=20,
+                        help='number of frames to share with the previous image')
+    ap = argparse.ArgumentParser()
+    args = vars(ap.parse_args())
+
+    skeleton_path = args["skeleton_path"]
+    max_frames = args["max_frames"]
+    stride = args["stride"]
+    generate_images(skeleton_path, max_frames, stride)
+
+if __name__ == "__main__":
+    main()
