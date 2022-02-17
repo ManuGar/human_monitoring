@@ -1,14 +1,18 @@
 import argparse
 import os
 
-# Esta es la versión para label smoothing y así conservar la información sobre todas las clases. Guradamos en un CSV el
+# Esta es la versión para label smoothing y así conservar la información sobre todas las clases. Guardamos en un CSV el
 # % de cuanto pertenece a cada clase. De esta forma no se pierde nada de información para hacer el entrenamiento.
-# Aunque sea un proceso más costoso
+# Aunque sea un proceso más costoso.
+# Necesita el frame de inicio, el final, el número de clases del problema, el path de la anotación del vídeo y el path
+# del archivo donde se van a guardar las anotaciones de las imágenes
 def annotation_images_labelsmoothing(min_frame, max_frame, number_classes, annotation_path, output_path):
+    # Creamos el diccionario para guardar la cuenta de las apariciones de cada clase. Iniciamos todas las clases a 0
     actions_count = {0:0}
     for i in range(number_classes):
         actions_count[i+1] = 0
 
+    # Cargamos la anotación y hacemos la cuenta de la cantidad de frames que hay en cada acción
     ann_file = open(annotation_path,"r")
     for line in ann_file:
         line = line.split(" ")
@@ -17,6 +21,8 @@ def annotation_images_labelsmoothing(min_frame, max_frame, number_classes, annot
         if(int(line[0])>max_frame):
             break
 
+    # Calculamos el número de frames para luego realizar las anotaciones. E inicializamos si fuera necesario el archivo
+    # de salida para guardar los resultados
     number_frames = max_frame-min_frame
     if (os.path.exists(output_path)):
         output_path_csv = open(output_path, "a")
@@ -27,6 +33,7 @@ def annotation_images_labelsmoothing(min_frame, max_frame, number_classes, annot
             head+= ", class " + str(i)
         output_path_csv.write(head+ "\n")
 
+    # Generamos la línea que vamos a escribir en el archivo de salida
     line_write = "from_"+ str(min_frame)+"_to_"+str(max_frame)
     for cla in actions_count:
         line_write += ", "+str(actions_count[cla]/number_frames)
@@ -34,16 +41,15 @@ def annotation_images_labelsmoothing(min_frame, max_frame, number_classes, annot
     output_path_csv.close()
 
 
-
 # En este caso, solo guardamos el porcentaje de la clase que más frames tiene en la imagen. Es un proceso más sencillo
-# para realizar luego el entrenamiento.
+# para realizar luego el entrenamiento. El funcionamiento es exactamente igual al anterior solo que solo escribiremos
+# la clase predominante dentro del rango de frames a estudiar.
 def annotation_images(min_frame, max_frame, number_classes, annotation_path, output_path):
     actions_count = {}
     for i in range(number_classes):
         actions_count[i + 1] = 0
 
     ann_file = open(annotation_path,"r")
-
     for line in ann_file:
         line = line.split("\t")
         if (int(line[0]) >= min_frame and int(line[0]) < max_frame):

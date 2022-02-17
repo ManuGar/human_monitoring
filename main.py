@@ -17,10 +17,9 @@ def normalize(value: float, lower_bound: float, higher_bound: float, max_value: 
         ret_value = (max_value * ((value - lower_bound) / (higher_bound - lower_bound)))  # estava com cast de int()
     return ret_value
 
-
+# Para generar las imágenes necesitamos el path de la carpeta en la que estan los frames de los esqueletos de los videos,
+# los frames que vamos a guardar en cada imagen y la cantidad de frames que va a compartir con la imagen siguiente
 def generate_images(skeleton_path, max_frames=68, stride=20):
-
-    i = 1
     # Límite de frames que se van a incluir en cada imagen
     # max_frames = 128 #Esto es por el resultado que nos ha dado la media y la mediana
     count_generated_frames=0
@@ -28,27 +27,44 @@ def generate_images(skeleton_path, max_frames=68, stride=20):
     # En este vector guardamos el orden de los joint para luego poder recorrerlo en el orden que queremos
     joints_order = [1,2,3,26,27,28,29,28,27,30,31,30,27,26,3,2,4,5,6,7,8,9,8,7,10,7,6,5,4,2,11,12,13,14,
                     15,16,15,14,17,14,13,12,11,2,1]
+    # Plantilla de la imagen vacía (llena de 0) para ir completándola en cada paso
     img = np.zeros((max_frames, len(joints_order),3), dtype=np.uint8)
+    i = 1 # Contador para el número de frames tratados. Al llegar al tope se vuelca la imagen generada a disco
+    l =0 # Contador para recorrer los frames de un mismo vídeo con un while y poder hacer bien el stride
 
-    # Vamos recorriendo las carpetas y si se cambia de carpeta, dejaremos el resto de la imagen en negro y se empezará
-    # la siguiente
-    l=0 #contador para recorrer los ficheros con un while y poder hacer bien el stride
-    for nombre_directorio, dirs, ficheros in os.walk(skeleton_path):
-        # print(nombre_directorio)
-        # for nombre_fichero in ficheros:
-        print(nombre_directorio)
-        print(dirs)
-        print("PRUEBAAAAAAAAAAAAAAAAAAAAAA")
-        count_generated_frames = 0
-        while l < len(ficheros) and count_generated_frames <= len(ficheros):
-            nombre_fichero = ficheros[l]
-            ske=os.path.join(nombre_directorio,nombre_fichero)
+    # Lista con todos los frames de los vídeos sobre los que se va a trabajar. Luego hay que tratar las rutas para saber
+    # cuando se cambia de vídeo y demás.
+    skeleton_path = list(paths.list_files(skeleton_path, validExts=".txt"))
+    # Esta variable sirve para comprobar cuando estamos cambiando de video y reiniciar ciertas variables
+    cambio_vid = ""
+
+    # Recorremos la lista de frames
+    for fichero in skeleton_path:
+
+        # Tratamos la ruta para obtener la carpeta de los videos y poder realizar diferentes cálculos
+        dirs = fichero.split(os.path.sep)
+        # Ruta con el nombre del vídeo con el que trabajamos
+        nombre_directorio = os.path.join(dirs[0], dirs[1])
+
+        # Aquí comprobamos que estamos en un vídeo nuevo y reniciamos el contador de frames generador y el contador de
+        # frames que tiene ese video
+        if cambio_vid!= dirs[1]:
+            cambio_vid=dirs[1]
+            count_generated_frames = 0
+            l = 0
+            contador_frames_video = len(list(paths.list_files(fichero[:fichero.rfind(os.path.sep)], validExts=".txt")))
+        # while l < len(ficheros) and count_generated_frames <= len(ficheros):
+
+        # Vamos a generar las imágenes del video que trate mientras el contador sea menos al número de imágenes que
+        # tiene ese vídeo y las imágenes generadas también sean menores (para casos como que estamos en el final del
+        # vídeo o el vídeo es muy corto
+        while l < contador_frames_video and count_generated_frames <= contador_frames_video:
+
             # print(os.path.join(nombre_directorio,nombre_fichero))
-            frame = pd.read_csv(ske, sep="\t", header=0)
+            # Leemos el archivo del frame para trabajar con él
+            frame = pd.read_csv(fichero, sep="\t", header=0)
             frame = pd.DataFrame(frame)
             joints={}
-            # Con esto tenemos que ir leyendo los frames para obtener de cada uno la información de los esqueletos y
-            # generar una fila de la imagen para cada frame que leamos.
 
             # Aquí guardamos los joints y los datos que queremos en un diccionario para luego generar la imagen
             for j, line in frame.iterrows():
@@ -57,9 +73,8 @@ def generate_images(skeleton_path, max_frames=68, stride=20):
                 joints[int(line[1])]=[normalize(line[3],-200, 1000, 255, 0),normalize(line[4],-1000, 1000, 255, 0),
                                       normalize(line[5],1200, 2200, 255, 0)]
 
-            # print(joints)
-            # Guardamos el contenido de las componentes de los diferentes joints en las coordenadas de la imagen
-            # para cada frame generamos una fila en la imagen
+            # Guardamos el contenido de las componentes de los diferentes joints en las coordenadas de la imagen.
+            # Para cada frame generamos una fila en la imagen
             for idx in range(len(joints_order)):
                 # print(joints[joints_order[idx]][0])
                 img[i-1,idx,0]= joints[joints_order[idx]][0]
@@ -69,42 +84,42 @@ def generate_images(skeleton_path, max_frames=68, stride=20):
             # Aquí vamos a escribir la matriz con los datos a la imagen para guardarla. Primero comprobamos que podamos
             # seguir guardando la matriz con los datos de la imagen que generamos. Si hemos llegado al límite de frames o
             # al final del fichero, lo que haremos es escribirla en la imagen.
-            if i < max_frames and (l+1 < len(ficheros) and i < len(ficheros)):
+            if i < max_frames and (l+1 < len(contador_frames_video) and i < len(contador_frames_video)):
                 i += 1
                 l += 1
             else:
                 # Guardamos las imágenes generadas en una carpeta para que esté organizada junto al vídeo que hacen
                 # referencia y poder saber fácilmente la clase de cada fila de las imágenes.
-                if not os.path.exists(os.path.join(nombre_directorio,"..","..","images")):
-                    os.mkdir(os.path.join(nombre_directorio,"..","..","images"))
-                generated_image=os.path.join(nombre_directorio,"..","..","images","from_" + str(count_generated_frames) + "_to_" + (str(count_generated_frames + max_frames) ))
 
-                # Aquí si cambiamos de problema o modificamos las clases que queremos estudiar habrá que cambiar ese 12
-                # que hace referencia al número de clases del problema que estamos tratando
+                # Creamos la carpeta de las imágenes en el caso de que no exista
+                if not os.path.exists(os.path.join(nombre_directorio,"images")):
+                    os.mkdir(os.path.join(nombre_directorio,"images"))
 
+                # Guardamos el nombre que tendrá la imagen
+                generated_image=os.path.join(nombre_directorio,"images","from_" + str(count_generated_frames) + "_to_" + (str(count_generated_frames + max_frames)))
 
-
-
-
-
-                # probar esta parte con todo lo de las rutas y hacer pruebas en donde se guarda y dejarlo
-                #  todo organizado para luego poder entrenarlo
+                # Guardamos el id del video a partir de la ruta, con el id podremos generar a la vez también las
+                # anotaciones de las imágenes que se van generando
                 id_video = nombre_directorio.split(os.path.sep)[1].split("_")[0]
-                # Hay que revisar y comprobar que esto valga para todos los casos. Ponerlo de forma que sirva siempre.
-                # De momento solo vale si las carpetas que contienen los esqueletos están dentro de una carpeta "padre"
+                # Con el id del vídeo que estamos tratando, buscamos la anotación del vídeo para poder generar la
+                # anotación de las imágenes
                 for ann_files in os.listdir("annot_renamed"):
                     id_ann_file = ann_files.split("_")[0]
-
                     if id_ann_file==id_video:
                         annotation_path = os.path.join("annot_renamed",ann_files)
                         break
 
-                # annotation_path = os.path.join("annot_renamed",nombre_directorio)
-                output_path = os.path.join(nombre_directorio,"..","..", "annotation_images_labelSmoothing.csv")
+                # Guardamos el archivo de la anotación de las imágenes en el mismo nivel que la carpeta de las imágenes
+                # y la de los esqueletos
+                output_path = os.path.join(nombre_directorio, "annotation_images_labelSmoothing.csv")
+                # Aquí si cambiamos de problema o modificamos las clases que queremos estudiar habrá que cambiar ese 12
+                # que hace referencia al número de clases del problema que estamos tratando
+                # Con esta función generamos las anotaciones
                 annotation_images.annotation_images_labelsmoothing(count_generated_frames,count_generated_frames+max_frames,12,annotation_path,output_path)
 
-
+                # Actualizamos el número de frames tratados
                 count_generated_frames += max_frames-stride
+                # Reiniciamos los contadores de los frames tratados, guardamos las imágenes y actualizamos el valor de l
                 i = 1
                 cv2.imwrite(generated_image + ".jpg", img)
                 cv2.imwrite(generated_image + "X.jpg", img[:,:,0])
