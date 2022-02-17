@@ -3,6 +3,8 @@ import pandas as pd
 import os
 import numpy as np
 import cv2
+import annotation_images
+from imutils import paths
 
 # Función para normalizar los valores de las posiciones de los joint. Tienen que estar entre 0 y 255
 # para poder guardarlos en los píxeles de la imagen
@@ -31,9 +33,13 @@ def generate_images(skeleton_path, max_frames=68, stride=20):
     # Vamos recorriendo las carpetas y si se cambia de carpeta, dejaremos el resto de la imagen en negro y se empezará
     # la siguiente
     l=0 #contador para recorrer los ficheros con un while y poder hacer bien el stride
-    for nombre_directorio, dirs, ficheros in os.walk(skeleton_path, topdown=False):
+    for nombre_directorio, dirs, ficheros in os.walk(skeleton_path):
         # print(nombre_directorio)
         # for nombre_fichero in ficheros:
+        print(nombre_directorio)
+        print(dirs)
+        print("PRUEBAAAAAAAAAAAAAAAAAAAAAA")
+        count_generated_frames = 0
         while l < len(ficheros) and count_generated_frames <= len(ficheros):
             nombre_fichero = ficheros[l]
             ske=os.path.join(nombre_directorio,nombre_fichero)
@@ -69,10 +75,35 @@ def generate_images(skeleton_path, max_frames=68, stride=20):
             else:
                 # Guardamos las imágenes generadas en una carpeta para que esté organizada junto al vídeo que hacen
                 # referencia y poder saber fácilmente la clase de cada fila de las imágenes.
-                if not os.path.exists(os.path.join(nombre_directorio,"images")):
-                    os.mkdir(os.path.join(nombre_directorio,"images"))
-                generated_image=os.path.join(nombre_directorio,"images","from_" + str(count_generated_frames) + "_to_" + (str(count_generated_frames + max_frames) ))
-                # count_generated_frames+=max_frames
+                if not os.path.exists(os.path.join(nombre_directorio,"..","..","images")):
+                    os.mkdir(os.path.join(nombre_directorio,"..","..","images"))
+                generated_image=os.path.join(nombre_directorio,"..","..","images","from_" + str(count_generated_frames) + "_to_" + (str(count_generated_frames + max_frames) ))
+
+                # Aquí si cambiamos de problema o modificamos las clases que queremos estudiar habrá que cambiar ese 12
+                # que hace referencia al número de clases del problema que estamos tratando
+
+
+
+
+
+
+                # probar esta parte con todo lo de las rutas y hacer pruebas en donde se guarda y dejarlo
+                #  todo organizado para luego poder entrenarlo
+                id_video = nombre_directorio.split(os.path.sep)[1].split("_")[0]
+                # Hay que revisar y comprobar que esto valga para todos los casos. Ponerlo de forma que sirva siempre.
+                # De momento solo vale si las carpetas que contienen los esqueletos están dentro de una carpeta "padre"
+                for ann_files in os.listdir("annot_renamed"):
+                    id_ann_file = ann_files.split("_")[0]
+
+                    if id_ann_file==id_video:
+                        annotation_path = os.path.join("annot_renamed",ann_files)
+                        break
+
+                # annotation_path = os.path.join("annot_renamed",nombre_directorio)
+                output_path = os.path.join(nombre_directorio,"..","..", "annotation_images_labelSmoothing.csv")
+                annotation_images.annotation_images_labelsmoothing(count_generated_frames,count_generated_frames+max_frames,12,annotation_path,output_path)
+
+
                 count_generated_frames += max_frames-stride
                 i = 1
                 cv2.imwrite(generated_image + ".jpg", img)
@@ -92,12 +123,17 @@ def main():
                         help='number of frames to store in each image')
     parser.add_argument('--stride', type=int, default=20,
                         help='number of frames to share with the previous image')
+    parser.add_argument('--annotation_path', type=str,
+                        help='path of the annotation files')
     ap = argparse.ArgumentParser()
     args = vars(ap.parse_args())
 
-    skeleton_path = args["skeleton_path"]
-    max_frames = args["max_frames"]
-    stride = args["stride"]
+    skeleton_path = 'videos'
+    max_frames = 68
+    stride = 20
+    # skeleton_path = args["skeleton_path"]
+    # max_frames = args["max_frames"]
+    # stride = args["stride"]
     generate_images(skeleton_path, max_frames, stride)
 
 if __name__ == "__main__":

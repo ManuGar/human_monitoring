@@ -5,18 +5,16 @@ import os
 # % de cuanto pertenece a cada clase. De esta forma no se pierde nada de información para hacer el entrenamiento.
 # Aunque sea un proceso más costoso
 def annotation_images_labelsmoothing(min_frame, max_frame, number_classes, annotation_path, output_path):
-    actions_count = {}
+    actions_count = {0:0}
     for i in range(number_classes):
         actions_count[i+1] = 0
 
     ann_file = open(annotation_path,"r")
-
-
     for line in ann_file:
-        line = line.split("\t")
-        if(line[0]>=min_frame and line[0]<max_frame):
-            actions_count[line[1]]+=1
-        if(line[0]>max_frame):
+        line = line.split(" ")
+        if(int(line[0])>=min_frame and int(line[0])<max_frame):
+            actions_count[int(line[1])]+=1
+        if(int(line[0])>max_frame):
             break
 
     number_frames = max_frame-min_frame
@@ -26,13 +24,13 @@ def annotation_images_labelsmoothing(min_frame, max_frame, number_classes, annot
         output_path_csv = open(output_path, "w")
         head = "images"
         for i in range(number_classes):
-            head+= ", class " + i
-        output_path_csv.write(head)
+            head+= ", class " + str(i)
+        output_path_csv.write(head+ "\n")
 
-    line_write = "from_"+min_frame+"_to_"+max_frame
+    line_write = "from_"+ str(min_frame)+"_to_"+str(max_frame)
     for cla in actions_count:
         line_write += ", "+str(actions_count[cla]/number_frames)
-    output_path_csv.write(line_write)
+    output_path_csv.write(line_write + "\n")
     output_path_csv.close()
 
 
@@ -48,9 +46,9 @@ def annotation_images(min_frame, max_frame, number_classes, annotation_path, out
 
     for line in ann_file:
         line = line.split("\t")
-        if(line[0]>=min_frame and line[0]<max_frame):
-            actions_count[line[1]]+=1
-        if(line[0]>max_frame):
+        if (int(line[0]) >= min_frame and int(line[0]) < max_frame):
+            actions_count[int(line[1])] += 1
+        if(int(line[0])>max_frame):
             break
 
     id = 1
@@ -66,11 +64,11 @@ def annotation_images(min_frame, max_frame, number_classes, annotation_path, out
         output_path_csv = open(output_path, "w")
         head = "images"
         for i in range(number_classes):
-            head += ", class " + i
+            head += ", class " + str(i) + "\n"
         output_path_csv.write(head)
 
-    line_write = "from_"+min_frame+"_to_"+max_frame+ ", "+id
-    output_path_csv.write(line_write)
+    line_write = "from_"+str(min_frame)+"_to_"+ str(max_frame) + ", "+ str(id)
+    output_path_csv.write(line_write + "\n")
     output_path_csv.close()
 
 

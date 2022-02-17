@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
-base = pd.read_excel("prueba.xlsx", index_col=0)
+base = pd.read_excel("actionRename.xlsx", index_col=0)
 
 baseDF = pd.DataFrame(base)
 
@@ -38,11 +38,11 @@ for i,line in baseDF.iterrows():
 
   ann[int(line[33]):int(line[34])+1,1]= cls[12]
 
-  if not os.path.exists('annot'):
-    os.mkdir('annot')
+  if not os.path.exists('annot_renamed'):
+    os.mkdir('annot_renamed')
 
 
-  a_file = open('annot/'+line[0] + '.txt', "w")
+  a_file = open('annot_renamed/'+line[0] + '.txt', "w")
   np.savetxt(a_file, ann, fmt="%d")
   a_file.close()
 
