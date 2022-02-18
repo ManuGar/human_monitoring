@@ -9,6 +9,7 @@ import os
 def annotation_images_labelsmoothing(min_frame, max_frame, number_classes, annotation_path, output_path):
     # Creamos el diccionario para guardar la cuenta de las apariciones de cada clase. Iniciamos todas las clases a 0
     actions_count = {0:0}
+
     for i in range(number_classes):
         actions_count[i+1] = 0
 
