@@ -4,7 +4,6 @@ import os
 import numpy as np
 import cv2
 import annotation_images
-import csv
 
 # Función para normalizar los valores de las posiciones de los joint. Tienen que estar entre 0 y 255
 # para poder guardarlos en los píxeles de la imagen
@@ -16,9 +15,6 @@ def normalize(value: float, lower_bound: float, higher_bound: float, max_value: 
     else:
         ret_value = (max_value * ((value - lower_bound) / (higher_bound - lower_bound)))
     return ret_value
-
-
-
 
 def calc_max_min_coord(skeleton_list, video_path):
     max_x = 0
@@ -33,9 +29,7 @@ def calc_max_min_coord(skeleton_list, video_path):
     if(len(skeleton_list)>0):
         frame = pd.read_csv(os.path.join(video_path, skeleton_list[0]), sep="\t", header=0)
         frame = pd.DataFrame(frame)
-
         for _, line in frame.iterrows():
-
             max_x = line[3]
             min_x = line[3]
             max_y = line[4]
@@ -47,7 +41,6 @@ def calc_max_min_coord(skeleton_list, video_path):
     for skeleton in skeleton_list:
         frame = pd.read_csv(os.path.join(video_path, skeleton), sep="\t", header=0)
         frame = pd.DataFrame(frame)
-
         for _, line in frame.iterrows():
             if(line[3]>max_x): max_x=line[3]
             if(line[3]<min_x): min_x=line[3]
@@ -57,12 +50,9 @@ def calc_max_min_coord(skeleton_list, video_path):
 
             if (line[5] > max_z): max_z = line[5]
             if (line[5] < min_z): min_z = line[5]
-
     return min_x, max_x, min_y, max_y, min_z, max_z
 
-
-
-def genenerate_image_from_skeletons_list(skeleton_list,video_path, annotation_file, max_frames=68, stride=20):
+def genenerate_images_from_skeletons_list(skeleton_list,video_path, annotation_file, max_frames=68, stride=20):
 
     # Comprobamos que la lista no esta vacía para obtener el primer elemento y sacar la ruta para poder guardar las
     # imágenes y las anotaciones que generemos
@@ -91,8 +81,6 @@ def genenerate_image_from_skeletons_list(skeleton_list,video_path, annotation_fi
     # comprobando el número de frames para ir volcando la imagen generada en disco. Hay que contemplar los casos como
     # estar en el final del vídeo o que tengamos un vídeo muy corto
 
-
-    # for skeleton in skeleton_list:
     while l < len(skeleton_list) and count_generated_frames < len(skeleton_list):
         skeleton = skeleton_list[l]
         # Leemos el archivo del frame para trabajar con él
@@ -108,14 +96,6 @@ def genenerate_image_from_skeletons_list(skeleton_list,video_path, annotation_fi
             joints[int(line[1])] = [normalize(line[3], min_x, max_x, 255, 0), normalize(line[4], min_y, max_y, 255, 0),
                                     normalize(line[5], min_z, max_z, 255, 0)]
 
-        # Guardamos el contenido de las componentes de los diferentes joints en las coordenadas de la imagen.
-        # Para cada frame generamos una fila en la imagen
-        for idx in range(len(joints_order)):
-            # print(joints[joints_order[idx]][0])
-            img[i - 1, idx, 0] = joints[joints_order[idx]][0]
-            img[i - 1, idx, 1] = joints[joints_order[idx]][1]
-            img[i - 1, idx, 2] = joints[joints_order[idx]][2]
-
         # Aquí vamos a escribir la matriz con los datos a la imagen para guardarla. Primero comprobamos que podamos
         # seguir guardando la matriz con los datos de la imagen que generamos. Si hemos llegado al límite de frames o
         # al final del fichero, lo que haremos es escribirla en la imagen.
@@ -127,8 +107,13 @@ def genenerate_image_from_skeletons_list(skeleton_list,video_path, annotation_fi
             os.mkdir(os.path.join(name_dir, "images"))
 
         if i < max_frames:
-            # Aquí tenemos un problema, entra con los datos de los frames del nuevo vídeo... Como arreglar esto.
-            # Pasará con todos los videos que el último frame no se genere en su carpeta correspondiente...
+            # Guardamos el contenido de las componentes de los diferentes joints en las coordenadas de la imagen.
+            # Para cada frame generamos una fila en la imagen
+            for idx in range(len(joints_order)):
+                # print(joints[joints_order[idx]][0])
+                img[i, idx, 0] = joints[joints_order[idx]][0]
+                img[i, idx, 1] = joints[joints_order[idx]][1]
+                img[i, idx, 2] = joints[joints_order[idx]][2]
 
             if (l >= (len(skeleton_list) - 1) or i >= (len(skeleton_list) - 1)):
                 annotation_images.annotation_images_labelsmoothing(count_generated_frames,
@@ -143,7 +128,6 @@ def genenerate_image_from_skeletons_list(skeleton_list,video_path, annotation_fi
                                                    str(count_generated_frames + max_frames)))
 
                 # count_generated_frames = count_generated_frames + max_frames - stride
-
                 cv2.imwrite(generated_image + ".jpg", img)
                 cv2.imwrite(generated_image + "X.jpg", img[:, :, 0])
                 cv2.imwrite(generated_image + "Y.jpg", img[:, :, 1])
@@ -157,7 +141,6 @@ def genenerate_image_from_skeletons_list(skeleton_list,video_path, annotation_fi
             # anotaciones de las imágenes que se van generando
             # Con el id del vídeo que estamos tratando, buscamos la anotación del vídeo para poder generar la
             # anotación de las imágenes
-
             annotation_images.annotation_images_labelsmoothing(count_generated_frames,count_generated_frames + i, 12,
                                                                annotation_file, output_path_labelsmoothing)
             annotation_images.annotation_images(count_generated_frames, count_generated_frames + i, 12, annotation_file,
@@ -186,7 +169,6 @@ def genenerate_image_from_skeletons_list(skeleton_list,video_path, annotation_fi
             l = l - stride
 
 
-
 # Para generar las imágenes necesitamos el path de la carpeta en la que estan los frames de los esqueletos de los videos,
 # los frames que vamos a guardar en cada imagen y la cantidad de frames que va a compartir con la imagen siguiente
 def generate_images(skeleton_path, annotation_path, max_frames=68, stride=20):
@@ -207,10 +189,7 @@ def generate_images(skeleton_path, annotation_path, max_frames=68, stride=20):
             video_path = carpeta[0]
             skeletons_carpeta = os.listdir(carpeta[0])
             print("El número de frames que hay en el vídeo " + carpeta[0] + " es: " + str(len(skeletons_carpeta)))
-            genenerate_image_from_skeletons_list(skeletons_carpeta,video_path,annotation_file,max_frames, stride)
-
-    # for fichero in skeleton_path:
-    # while cont < total_ske:
+            genenerate_images_from_skeletons_list(skeletons_carpeta,video_path,annotation_file,max_frames, stride)
 
 
 def main():
@@ -229,7 +208,6 @@ def main():
     skeleton_path = 'videos'
     max_frames = 68
     # max_frames = 128 #Esto es por el resultado que nos ha dado la media y la mediana
-
     stride = 20
     annotation_path = "annot_renamed"
     # skeleton_path = args["skeleton_path"]
