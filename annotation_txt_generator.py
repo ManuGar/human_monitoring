@@ -38,8 +38,8 @@ for i,line in baseDF.iterrows():
 
   ann[int(line[33]):int(line[34])+1,1]= cls[12]
 
-  if not os.path.exists('annot_renamed'):
-    os.mkdir('annot_renamed')
+  if not os.path.exists('pruebas/annot_renamed'):
+    os.mkdir('pruebas/annot_renamed')
 
 
   a_file = open('annot_renamed/'+line[0] + '.txt', "w")

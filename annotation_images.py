@@ -12,7 +12,7 @@ def annotation_images_labelsmoothing(min_frame, max_frame, number_classes, annot
 
     for i in range(number_classes):
         actions_count[i+1] = 0
-    id_video = annotation_path.split(os.sep)[1].split("_")[0]
+    id_video = annotation_path.split(os.sep)[2].split("_")[0]
 
     # Cargamos la anotación y hacemos la cuenta de la cantidad de frames que hay en cada acción
     ann_file = open(annotation_path,"r")
@@ -52,7 +52,7 @@ def annotation_images(min_frame, max_frame, number_classes, annotation_path, out
 
     for i in range(number_classes):
         actions_count[i + 1] = 0
-    id_video = annotation_path.split(os.sep)[1].split("_")[0]
+    id_video = annotation_path.split(os.sep)[2].split("_")[0]
 
     # Cargamos la anotación y hacemos la cuenta de la cantidad de frames que hay en cada acción
     ann_file = open(annotation_path, "r")
