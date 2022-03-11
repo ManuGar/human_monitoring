@@ -58,7 +58,8 @@ def genenerate_images_from_skeletons_list(skeleton_list,video_path, annotation_f
     # pueden perder frames y eso hace que la acción a la que hace referencia se vea discontinuada. Si se supera este
     # umbral, entonces la imagen no se guardará.
     splited_path = video_path.split(os.sep)
-    name_dir = os.path.join(splited_path[0], splited_path[1],splited_path[2])
+    # name_dir = os.path.join(splited_path[0], splited_path[1],splited_path[2])
+    name_dir = os.path.join("dataset_to_train_38frames", splited_path[1],splited_path[2])
     id_video = splited_path[2].split("_")[0]
 
 
@@ -122,7 +123,7 @@ def genenerate_images_from_skeletons_list(skeleton_list,video_path, annotation_f
             # Guardamos las imágenes generadas en una carpeta para que esté organizada junto al vídeo que hacen
             # referencia y poder saber fácilmente la clase de cada fila de las imágenes.
             if not os.path.exists(os.path.join(name_dir, "images")):
-                os.mkdir(os.path.join(name_dir, "images"))
+                os.makedirs(os.path.join(name_dir, "images"))
             if i < max_frames:
                 # Guardamos el contenido de las componentes de los diferentes joints en las coordenadas de la imagen.
                 # Para cada frame generamos una fila en la imagen
@@ -135,9 +136,9 @@ def genenerate_images_from_skeletons_list(skeleton_list,video_path, annotation_f
                     frame_end = int(skeleton.split("/")[-1].split("_")[0].split("FrameID")[-1])
                     if ((frame_end - frame_start) < max_error):
                         annotation_images.annotation_images_labelsmoothing(count_generated_frames,
-                                                                           count_generated_frames + i, 12, annotation_file,
+                                                                           count_generated_frames + max_frames, 12, annotation_file,
                                                                            output_path_labelsmoothing)
-                        images_per_class[annotation_images.annotation_images(count_generated_frames, count_generated_frames + i, 12, annotation_file,
+                        images_per_class[annotation_images.annotation_images(count_generated_frames, count_generated_frames + max_frames, 12, annotation_file,
                                                                            output_path)]+=1
                         # Guardamos el nombre que tendrá la imagen
                         generated_image = os.path.join(name_dir, "images",
@@ -163,9 +164,9 @@ def genenerate_images_from_skeletons_list(skeleton_list,video_path, annotation_f
                 frame_end = int(skeleton.split("/")[-1].split("_")[0].split("FrameID")[-1])
                 if((frame_end-frame_start)< max_error):
 
-                    annotation_images.annotation_images_labelsmoothing(count_generated_frames,count_generated_frames + i, 12,
+                    annotation_images.annotation_images_labelsmoothing(count_generated_frames,count_generated_frames + max_frames, 12,
                                                                        annotation_file, output_path_labelsmoothing)
-                    images_per_class[annotation_images.annotation_images(count_generated_frames, count_generated_frames + i, 12, annotation_file,
+                    images_per_class[annotation_images.annotation_images(count_generated_frames, count_generated_frames + max_frames, 12, annotation_file,
                                                         output_path)]+=1
                     # Guardamos el archivo de la anotación de las imágenes en el mismo nivel que la carpeta de las imágenes
                     # y la de los esqueletos
@@ -222,6 +223,7 @@ def generate_images(skeleton_path, annotation_path, max_frames=68, stride=20):
             # generar la anotación de las imágenes que creemos
             for ann_files in os.listdir(annotation_path):
                 id_ann_file = ann_files.split(".")[0]
+
                 if id_ann_file == id_video:
                     annotation_file = os.path.join(annotation_path, ann_files)
                     break
@@ -250,15 +252,16 @@ def main():
                         help='path of the annotation files')
     ap = argparse.ArgumentParser()
     args = vars(ap.parse_args())
-    skeleton_path = 'dataset/CNR-STIIMA'
-    # max_frames = 68
-    max_frames = 77 #Este resultado lo ha dado la media supuestamente bien calculada ahora
+    skeleton_path = 'dataset/RIOJA'
+    # max_frames = 68 #Este resultado lo ha dado la mediana
+    # max_frames = 77 #Este resultado lo ha dado la media supuestamente bien calculada ahora
+    max_frames = 38
 
     # max_frames = 128 #Esto es por el resultado que nos ha dado la media y la mediana
     # stride = 20  # Es el que puesto por defecto, con esto tendríamos un salto de 48 frames
-    stride = max_frames - 57 # Para tener un salto de 20 frames
+    stride = 19 # Para tener un salto de 20 frames
 
-    annotation_path = "txtAnnotation/txtAnnotationStiima"
+    annotation_path = "txtAnnotation/txtAnnotationRioja"
     # skeleton_path = args["skeleton_path"]
     # max_frames = args["max_frames"]
     # stride = args["stride"]

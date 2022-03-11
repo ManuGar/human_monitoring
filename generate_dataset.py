@@ -3,7 +3,7 @@ import shutil
 
 
 
-dataset = "dataset_to_train"
+dataset = "dataset_to_train_38frames"
 # if not os.path.exists(dataset):
 #     os.mkdir(dataset)
 
