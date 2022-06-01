@@ -59,7 +59,7 @@ def genenerate_images_from_skeletons_list(skeleton_list,video_path, annotation_f
     # umbral, entonces la imagen no se guardará.
     splited_path = video_path.split(os.sep)
     # name_dir = os.path.join(splited_path[0], splited_path[1],splited_path[2])
-    name_dir = os.path.join("dataset_to_train_38frames", splited_path[1],splited_path[2])
+    name_dir = os.path.join("dataset_to_train_77frames", splited_path[1],splited_path[2])
     id_video = splited_path[2].split("_")[0]
 
 
@@ -252,14 +252,14 @@ def main():
                         help='path of the annotation files')
     ap = argparse.ArgumentParser()
     args = vars(ap.parse_args())
-    skeleton_path = 'dataset/RIOJA'
+    skeleton_path = 'mal/vid'
     # max_frames = 68 #Este resultado lo ha dado la mediana
     # max_frames = 77 #Este resultado lo ha dado la media supuestamente bien calculada ahora
-    max_frames = 38
+    max_frames = 77
 
     # max_frames = 128 #Esto es por el resultado que nos ha dado la media y la mediana
     # stride = 20  # Es el que puesto por defecto, con esto tendríamos un salto de 48 frames
-    stride = 19 # Para tener un salto de 20 frames
+    stride = max_frames - 57 # Para tener un salto de 20 frames
 
     annotation_path = "txtAnnotation/txtAnnotationRioja"
     # skeleton_path = args["skeleton_path"]
